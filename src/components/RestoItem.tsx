@@ -6,7 +6,7 @@ function RestoItem(props: {resto: {
     name: string,
     url: string,
     upvotes: number,
-    downvotes: number,}, restoId: number, handleVotes: Function}) {
+    downvotes: number,}, restoId: number, handleVotes: (...args: number[]) => void}) {
 
     return <div style={{display: 'flex', flexDirection: 'row', width: 300, alignItems: 'center', justifyContent: 'space-between', fontSize: 20}}
                 onClick={() => {if (props.resto.url === "") {
