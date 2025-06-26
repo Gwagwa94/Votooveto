@@ -4,7 +4,6 @@ import React, {useState} from 'react'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import RestoItem from "./RestoItem"
-import Image from "next/image";
 
 function RestoList() {
     const [restos, setRestos] = useState([
@@ -35,11 +34,12 @@ function RestoList() {
         setRestos(nextRestos)
     }
     function addResto() {
-        setRestos([...restos, {name: newName, url: "", upvotes: 0, downvotes: 0}])
+        if (newName.length > 0) {
+            setRestos([...restos, {name: newName, url: "", upvotes: 0, downvotes: 0}])
+        }
         setNewName("")
     }
     return <div style={{display: 'flex', flexDirection: 'column', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', color:'black'}}>
-        <Image src={"/img.png"} alt="logo" width={600} height={600}/>
         {restos.map((resto, id) => <RestoItem key={id} resto={resto} restoId={id} handleVotes={handleVotes} />)}
         <div style={{display: 'flex', width: 300, alignItems: 'center', justifyContent: 'space-between'}}>
             <input style={{height: 30, width:'100%', border: 'solid', borderRadius: 10}} value={newName} onChange={e => setNewName(e.target.value)}
