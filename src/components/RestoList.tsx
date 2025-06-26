@@ -42,7 +42,7 @@ function RestoList() {
         <Image src={"/img.png"} alt="logo" width={600} height={600}/>
         {restos.map((resto, id) => <RestoItem key={id} resto={resto} restoId={id} handleVotes={handleVotes} />)}
         <div style={{display: 'flex', width: 300, alignItems: 'center', justifyContent: 'space-between'}}>
-            <input style={{height: 20, width:'100%'}} value={newName} onChange={e => setNewName(e.target.value)}
+            <input style={{height: 30, width:'100%', border: 'solid', borderRadius: 10}} value={newName} onChange={e => setNewName(e.target.value)}
             onKeyDown={e => {if (e.key === 'Enter') {addResto()}}}/>
             <IconButton size="large">
                 <AddIcon color="action" onClick={addResto} />
