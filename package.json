@@ -12,9 +12,13 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.1.2",
+    "@vercel/kv": "^3.0.0",
+    "crypto-browserify": "^3.12.1",
     "next": "^15.3.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "redis": "^5.5.6",
+    "stream-browserify": "^3.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
