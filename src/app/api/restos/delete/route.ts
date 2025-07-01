@@ -3,11 +3,6 @@
 import { createClient } from 'redis';
 import { NextResponse } from 'next/server';
 
-// La protection reste la même
-if (process.env.NODE_ENV !== 'development') {
-    throw new Error('This endpoint is only available in development mode.');
-}
-
 const redis = createClient({
     url: process.env.REDIS_URL
 });
@@ -25,8 +20,7 @@ async function getConnectedRedisClient() {
  * Handles DELETE requests to /api/restos/delete.
  * Deletes the 'restos' key from the Redis database.
  */
-export async function DELETE() { // <-- On change GET par DELETE ici
-    // La sécurité à l'intérieur de la fonction est toujours une bonne idée
+export async function DELETE() {
     if (process.env.NODE_ENV !== 'development') {
         return NextResponse.json(
             { error: 'This action is forbidden in production.' },
@@ -46,6 +40,6 @@ export async function DELETE() { // <-- On change GET par DELETE ici
 
     } catch (error) {
         console.error('Failed to delete restos:', error);
-        return new NextResponse('Internal Server Error', { status: 500 });
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
