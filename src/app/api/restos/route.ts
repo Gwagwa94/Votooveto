@@ -1,5 +1,5 @@
 // src/app/api/restos/route.ts
-import {NextResponse, NextRequest} from 'next/server';
+import {NextResponse} from 'next/server';
 import Pusher from 'pusher';
 import {getServerSession} from "next-auth/next";
 import {authOptions} from "@/app/api/auth/[...nextauth]/route";
@@ -22,7 +22,7 @@ const sumHashValues = (hash: { [key: string]: string }): number => {
 }
 
 // --- GET: Fetch all restaurants and user's vote state ---
-export async function GET(request: NextRequest) {
+export async function GET() {
   const client = await redis;
   const session = await getServerSession(authOptions);
   const userId = session?.user?.email;
@@ -115,7 +115,7 @@ export async function PUT(request: Request) {
   }
   const userId = session.user.email;
 
-  const {restoId, voteType, socketId} = await request.json();
+  const {restoId, voteType} = await request.json();
 
   if (!restoId || !['up', 'down'].includes(voteType)) {
     return NextResponse.json({error: 'Missing or invalid required fields.'}, {status: 400});

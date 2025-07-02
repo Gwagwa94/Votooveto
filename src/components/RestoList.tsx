@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { CircularProgress, IconButton, Alert, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import Pusher from 'pusher-js';
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import RestoItem from "./RestoItem";
 import { Resto, UserVoteState } from "@/lib/types";
 
@@ -181,7 +181,7 @@ function RestoList() {
             <span style={{ marginRight: '1rem', fontSize: '0.9rem' }}>
                 Votes Used: {userVoteState.upvotes}/{MAX_UPVOTES_PER_USER} Up | {userVoteState.downvotes}/{MAX_DOWNVOTES_PER_USER} Down
             </span>
-            <Button variant="outlined" size="small" onClick={() => signOut()}>Sign Out</Button>
+            {/*<Button variant="outlined" size="small" onClick={() => signOut()}>Sign Out</Button>*/}
           </>
         ) : (
           <Button variant="contained" onClick={() => signIn('google')}>Sign In with Google</Button>

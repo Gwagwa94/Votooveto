@@ -7,7 +7,7 @@ import { useSession, signIn, signOut } from "next-auth/react"; // Import from ne
 // import {getVotes} from "@/app/api/votes";
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
 
   return (
     <main style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
