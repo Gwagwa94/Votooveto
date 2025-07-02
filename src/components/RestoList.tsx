@@ -181,7 +181,7 @@ function RestoList() {
             <span style={{ marginRight: '1rem', fontSize: '0.9rem' }}>
                 Votes Used: {userVoteState.upvotes}/{MAX_UPVOTES_PER_USER} Up | {userVoteState.downvotes}/{MAX_DOWNVOTES_PER_USER} Down
             </span>
-            <Button variant="outlined" size="small" onClick={() => signOut()}>Sign Out</Button>
+            {/*<Button variant="outlined" size="small" onClick={() => signOut()}>Sign Out</Button>*/}
           </>
         ) : (
           <Button variant="contained" onClick={() => signIn('google')}>Sign In with Google</Button>
