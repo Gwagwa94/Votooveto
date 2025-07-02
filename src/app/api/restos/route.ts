@@ -60,11 +60,8 @@ export async function GET() {
       });
     }
 
-    restos.sort((a, b) => b.upvotes - a.upvotes);
-
-    // Return a new shape including the user's global vote state
+    restos.sort((a, b) => (b.upvotes-b.downvotes) - (a.upvotes-a.downvotes));
     return NextResponse.json({restos, userVoteState});
-
   } catch (error) {
     console.error('Failed to fetch restos:', error);
     return new NextResponse('Internal Server Error', {status: 500});
@@ -112,50 +109,56 @@ export async function PUT(request: Request) {
   }
   const userId = session.user.email;
 
-  const {restoId, voteType} = await request.json();
+  const {restoId, voteType, value, socketId} = await request.json();
 
-  if (!restoId || !['up', 'down'].includes(voteType)) {
+  if (!restoId || !['up', 'down'].includes(voteType) || ![1, -1].includes(value)) {
     return NextResponse.json({error: 'Missing or invalid required fields.'}, {status: 400});
   }
 
   const userVotesKey = `user:votes:${userId}`;
+  const voteKey = `votes:${restoId}:${voteType}`;
 
   try {
-    // Check the user's global vote limit first
-    const userVoteCounts = await client.hGetAll(userVotesKey);
-    const currentUpvotes = parseInt(userVoteCounts.ups || '0', 10);
-    const currentDownvotes = parseInt(userVoteCounts.downs || '0', 10);
-    console.log("currentUpVotes", userVoteCounts, currentUpvotes);
+    // --- DYNAMIC VALIDATION ---
+    if (value === 1) {
+      const userVoteCounts = await client.hGetAll(userVotesKey);
+      const currentUpvotes = parseInt(userVoteCounts.ups || '0', 10);
+      const currentDownvotes = parseInt(userVoteCounts.downs || '0', 10);
 
-    if (voteType === 'up' && currentUpvotes >= MAX_UPVOTES_PER_USER) {
-      return NextResponse.json({error: `Upvote limit of ${MAX_UPVOTES_PER_USER} reached.`}, {status: 403});
-    }
-    if (voteType === 'down' && currentDownvotes >= MAX_DOWNVOTES_PER_USER) {
-      return NextResponse.json({error: `Downvote limit of ${MAX_DOWNVOTES_PER_USER} reached.`}, {status: 403});
+      if (voteType === 'up' && currentUpvotes >= MAX_UPVOTES_PER_USER) {
+        return NextResponse.json({error: `Upvote limit of ${MAX_UPVOTES_PER_USER} reached.`}, {status: 403});
+      }
+      if (voteType === 'down' && currentDownvotes >= MAX_DOWNVOTES_PER_USER) {
+        return NextResponse.json({error: `Downvote limit of ${MAX_DOWNVOTES_PER_USER} reached.`}, {status: 403});
+      }
+    } else { // Logic for REMOVING a vote (value === -1)
+      const userVoteCountForResto = parseInt(await client.hGet(voteKey, userId) || '0', 10);
+      if (userVoteCountForResto <= 0) {
+        return NextResponse.json({error: 'No vote to remove.'}, {status: 400});
+      }
     }
 
-    // Use a transaction to increment both the user's total and the restaurant's specific vote
     const transaction = client.multi();
-    const voteKey = `votes:${restoId}:${voteType}`;
     const userVoteField = `${voteType}s`;
 
-    transaction.hIncrBy(voteKey, userId, 1);
-    transaction.hIncrBy(userVotesKey, userVoteField, 1);
+    transaction.hIncrBy(voteKey, userId, value);
+    transaction.hIncrBy(userVotesKey, userVoteField, value);
     await transaction.exec();
 
-    // After successfully voting, get the new total vote counts for the user
     const newUserVoteCounts = await client.hGetAll(userVotesKey);
     const newUserVoteState: UserVoteState = {
         upvotes: parseInt(newUserVoteCounts.ups || '0', 10),
         downvotes: parseInt(newUserVoteCounts.downs || '0', 10),
     };
 
-    // Trigger Pusher for OTHER clients
-    await pusher.trigger('restos-channel', 'restos-updated', {
-      message: `Vote updated for ${restoId}`
-    });
+    // Trigger Pusher for OTHER clients, excluding the sender
+    await pusher.trigger(
+        'restos-channel',
+        'restos-updated',
+        { message: `Vote updated for ${restoId}` },
+        { socket_id: socketId }
+    );
 
-    // Return the new state to the client that made the request
     return NextResponse.json({ success: true, userVoteState: newUserVoteState });
 
   } catch (error) {

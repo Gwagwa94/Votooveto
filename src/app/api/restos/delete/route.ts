@@ -11,8 +11,8 @@ import { NextResponse } from 'next/server';
 export async function DELETE() {
     if (process.env.NODE_ENV !== 'development') {
         return NextResponse.json(
-            { error: 'This action is forbidden in production.' },
-            { status: 403 }
+          { error: 'This action is forbidden in production.' },
+          { status: 403 }
         );
     }
 
