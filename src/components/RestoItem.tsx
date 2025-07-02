@@ -1,53 +1,63 @@
-'use client'
+// src/components/RestoItem.tsx
+'use client';
 
-import React from 'react'
+import React from 'react';
+import { Card, CardContent, Typography, IconButton, Box, Chip } from '@mui/material';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import { Resto } from '@/lib/types';
 
-function RestoItem(props: {resto: {
-    name: string,
-    url: string,
-    upvotes: number,
-    downvotes: number,}, restoId: string, handleVotes: (id: string, value: number) => void}) {
+// Define the props for this component
+interface RestoItemProps {
+  resto: Resto;
+  handleVote: (restoId: string, voteType: 'up' | 'down') => void;
+  upvotesLeft: number;
+  downvotesLeft: number;
+  isLoggedIn: boolean;
+}
 
-    return <div style={{display: 'flex', flexDirection: 'row', width: 300, alignItems: 'center', justifyContent: 'space-between', fontSize: 20}}
-                onClick={() => {if (props.resto.url === "") {
+function RestoItem({ resto, handleVote, upvotesLeft, downvotesLeft, isLoggedIn }: RestoItemProps) {
+  return (
+    <Card variant="outlined" style={{ marginBottom: '1rem' }}>
+      <CardContent>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h6" component="div">
+            {resto.name}
+            {resto.userUpvotes > 0 && (
+                <Chip label={`Tu: ${resto.userUpvotes}`} size="small" color="primary" variant="outlined" style={{ marginLeft: 8 }} />
+            )}
+            {resto.userDownvotes > 0 && (
+                <Chip label={`Tu: ${resto.userDownvotes}`} size="small" color="secondary" variant="outlined" style={{ marginLeft: 8 }} />
+            )}
+          </Typography>
 
-                } else {
-                    window.open(props.resto.url, '_blank', 'noreferrer')
-                }}}
-    >
-        <b>{props.resto.name ?? "what?"}</b>
-        <div style={{display: 'flex', flexDirection: 'row', width: '30%', justifyContent: 'space-between'}}>
-            <div style={{color: "#00aa69", display: 'flex', width: '50%', justifyContent: 'center', userSelect: 'none', cursor: 'pointer'}}
-                 onClick={e => {
-                     e.stopPropagation()
-                     props.handleVotes(props.restoId, 1)
-                 }}
-                 onContextMenu={e => {
-                     e.preventDefault()
-                     e.stopPropagation()
-                     props.handleVotes(props.restoId, 2)
-                 }}
+          <Box display="flex" alignItems="center">
+            <IconButton
+              aria-label="upvote"
+              onClick={() => handleVote(resto.id, 'up')}
+              disabled={!isLoggedIn || upvotesLeft <= 0}
             >
-                <b>{props.resto.upvotes}</b>
-            </div>
-            <div style={{color: "#f00", display: 'flex', width: '50%', justifyContent: 'center', userSelect: 'none', cursor: 'pointer'}}
-                 onClick={e => {
-                     e.stopPropagation()
-                     props.handleVotes(props.restoId, -1)
-                 }}
-                onContextMenu={e => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    props.handleVotes(props.restoId, -2)
-                }}>
-                <b>
-                    {props.resto.downvotes}
-                </b>
-            </div>
-        </div>
+              <ThumbUpIcon />
+            </IconButton>
+            <Typography variant="body1" style={{ minWidth: 24, textAlign: 'center' }}>
+              {resto.upvotes}
+            </Typography>
 
-
-    </div>
+            <IconButton
+              aria-label="downvote"
+              onClick={() => handleVote(resto.id, 'down')}
+              disabled={!isLoggedIn || downvotesLeft <= 0}
+            >
+              <ThumbDownIcon />
+            </IconButton>
+            <Typography variant="body1" style={{ minWidth: 24, textAlign: 'center' }}>
+              {resto.downvotes}
+            </Typography>
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default RestoItem;
