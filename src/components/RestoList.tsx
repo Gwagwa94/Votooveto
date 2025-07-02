@@ -18,6 +18,7 @@ function RestoList() {
   const [newName, setNewName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [socketId, setSocketId] = useState<string | null>(null);
 
   const { data: session, status } = useSession();
   const userEmail = session?.user?.email;
@@ -29,7 +30,6 @@ function RestoList() {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Failed to fetch data: ${response.statusText}`);
       const { restos, userVoteState } = await response.json();
-      console.log("userVoteState", userVoteState);
       setRestos(restos);
       setUserVoteState(userVoteState);
     } catch (err) {
@@ -52,9 +52,14 @@ function RestoList() {
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
     });
+
+    pusher.connection.bind('connected', () => {
+      setSocketId(pusher.connection.socket_id);
+    });
+
     const channel = pusher.subscribe('restos-channel');
     channel.bind('restos-updated', () => {
-      console.log("Received update signal, refetching data...");
+      console.log("Received update signal from another client, refetching data...");
       fetchRestos(userEmail);
     });
     return () => {
@@ -63,56 +68,47 @@ function RestoList() {
     };
   }, [userEmail, fetchRestos]);
 
-  const handleVote = async (restoId: string, voteType: 'up' | 'down') => {
+  const handleVote = async (restoId: string, voteType: 'up' | 'down', value: 1 | -1) => {
     if (!userEmail) {
       alert("Please sign in to vote.");
       return;
     }
 
-    if (voteType === 'up' && userVoteState.upvotes >= MAX_UPVOTES_PER_USER) {
-      console.warn("Frontend upvote limit reached. Ignoring action.");
-      return;
-    }
-    if (voteType === 'down' && userVoteState.downvotes >= MAX_DOWNVOTES_PER_USER) {
-      console.warn("Frontend downvote limit reached. Ignoring action.");
-      return;
+    // --- Dynamic Client-Side Guards ---
+    if (value === 1) {
+      if (voteType === 'up' && userVoteState.upvotes >= MAX_UPVOTES_PER_USER) return;
+      if (voteType === 'down' && userVoteState.downvotes >= MAX_DOWNVOTES_PER_USER) return;
+    } else {
+      const resto = restos.find(r => r.id === restoId);
+      if (!resto) return;
+      if (voteType === 'up' && resto.userUpvotes <= 0) return;
+      if (voteType === 'down' && resto.userDownvotes <= 0) return;
     }
 
     const originalRestos = [...restos];
     const originalUserVoteState = { ...userVoteState };
 
-    // Update restaurant-specific counts
+    // Optimistic UI Update using the 'value'
     setRestos(currentRestos =>
       currentRestos.map(r => {
         if (r.id !== restoId) return r;
         const newResto = { ...r };
         if (voteType === 'up') {
-          newResto.upvotes += 1;
-          newResto.userUpvotes += 1;
+          newResto.upvotes += value;
+          newResto.userUpvotes += value;
         } else {
-          newResto.downvotes += 1;
-          newResto.userDownvotes += 1;
+          newResto.downvotes += value;
+          newResto.userDownvotes += value;
         }
         return newResto;
       })
     );
 
-    // --- THIS IS THE FIX ---
-    // We remove the optimistic update for the global userVoteState.
-    // This prevents the flicker, as we will now only trust the server's response.
-    /*
-    setUserVoteState(current => ({
-      ...current,
-      upvotes: current.upvotes + (voteType === 'up' ? 1 : 0),
-      downvotes: current.downvotes + (voteType === 'down' ? 1 : 0),
-    }));
-    */
-
     try {
       const response = await fetch('/api/restos', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ restoId, voteType }),
+        body: JSON.stringify({ restoId, voteType, value, socketId }),
       });
 
       const responseData = await response.json();
@@ -189,14 +185,14 @@ function RestoList() {
       </header>
 
       <main>
-        {restos.map(resto => (
+        {restos.map((resto, index) => (
           <RestoItem
             key={resto.id}
             resto={resto}
             handleVote={handleVote}
-            upvotesLeft={MAX_UPVOTES_PER_USER - userVoteState.upvotes}
-            downvotesLeft={MAX_DOWNVOTES_PER_USER - userVoteState.downvotes}
             isLoggedIn={!!session}
+            isTop={index === 0}
+            isBottom={index === restos.length - 1}
           />
         ))}
       </main>
