@@ -31,7 +31,6 @@ export async function GET() {
     const restoIds = await client.sMembers('restos:ids');
     const restos: Resto[] = [];
 
-    // Fetch user's total vote counts
     let userVoteState: UserVoteState = {upvotes: 0, downvotes: 0};
     if (userId) {
       const userVoteCounts = await client.hGetAll(`user:votes:${userId}`);
@@ -43,8 +42,6 @@ export async function GET() {
 
     for (const id of restoIds) {
       const restoDetails = await client.hGetAll(`resto:${id}`);
-
-      // Fetch all votes for the restaurant and the specific user's votes
       const [upvotesHash, downvotesHash, userUpvotes, userDownvotes] = await Promise.all([
         client.hGetAll(`votes:${id}:up`),
         client.hGetAll(`votes:${id}:down`),

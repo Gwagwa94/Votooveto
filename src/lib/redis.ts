@@ -1,9 +1,14 @@
 // src/lib/redis.ts
-import {createClient} from 'redis';
+import { createClient, RedisClientType } from 'redis';
+
+declare global {
+  var redisClient: RedisClientType | undefined;
+}
 
 // This creates a single, shared Redis client instance.
-// The `?.` syntax ensures this code only runs on the server, preventing errors.
-const redisClient = global.redisClient ?? createClient({url: process.env.REDIS_URL});
+// In development, it reuses the cached `global.redisClient`.
+// In production, `global.redisClient` is always undefined, so a new client is created.
+const redisClient = global.redisClient ?? createClient({ url: process.env.REDIS_URL });
 
 redisClient.on('error', (err) => console.error('Redis Client Error', err));
 
@@ -16,7 +21,7 @@ async function getConnectedRedisClient() {
 }
 
 // In development, we attach the client to the global object to prevent
-// multiple instances being created due to Next.js's hot-reloading.
+// multiple instances from being created due to Next.js's hot-reloading.
 if (process.env.NODE_ENV !== 'production') {
   global.redisClient = redisClient;
 }
