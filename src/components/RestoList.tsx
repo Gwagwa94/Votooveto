@@ -8,6 +8,7 @@ import Pusher from 'pusher-js';
 import { useSession, signIn } from "next-auth/react";
 import RestoItem from "./RestoItem";
 import { Resto, UserVoteState } from "@/lib/types";
+import {AnimatePresence} from "framer-motion";
 
 const MAX_UPVOTES_PER_USER = 4;
 const MAX_DOWNVOTES_PER_USER = 2;
@@ -88,9 +89,9 @@ function RestoList() {
     const originalRestos = [...restos];
     const originalUserVoteState = { ...userVoteState };
 
-    // Optimistic UI Update using the 'value'
-    setRestos(currentRestos =>
-      currentRestos.map(r => {
+    // Optimistic UI Update with sorting
+    setRestos(currentRestos => {
+      const updatedRestos = currentRestos.map(r => {
         if (r.id !== restoId) return r;
         const newResto = { ...r };
         if (voteType === 'up') {
@@ -101,8 +102,12 @@ function RestoList() {
           newResto.userDownvotes += value;
         }
         return newResto;
-      })
-    );
+      });
+
+      updatedRestos.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
+
+      return updatedRestos;
+    });
 
     try {
       const response = await fetch('/api/restos', {
@@ -157,7 +162,7 @@ function RestoList() {
     } catch (err) {
       console.error("Failed to add restaurant:", err);
       setError("Could not save the new restaurant. Please refresh.");
-      setRestos(current => current.filter(r => r.id !== tempId)); // Revert
+      setRestos(current => current.filter(r => r.id !== tempId));
     }
   };
 
@@ -177,7 +182,6 @@ function RestoList() {
             <span style={{ marginRight: '1rem', fontSize: '0.9rem' }}>
                 Votes Used: {userVoteState.upvotes}/{MAX_UPVOTES_PER_USER} Up | {userVoteState.downvotes}/{MAX_DOWNVOTES_PER_USER} Down
             </span>
-            {/*<Button variant="outlined" size="small" onClick={() => signOut()}>Sign Out</Button>*/}
           </>
         ) : (
           <Button variant="contained" onClick={() => signIn('google')}>Sign In with Google</Button>
@@ -185,16 +189,18 @@ function RestoList() {
       </header>
 
       <main>
-        {restos.map((resto, index) => (
-          <RestoItem
-            key={resto.id}
-            resto={resto}
-            handleVote={handleVote}
-            isLoggedIn={!!session}
-            isTop={index === 0}
-            isBottom={index === restos.length - 1}
-          />
-        ))}
+        <AnimatePresence>
+          {restos.map((resto, index) => (
+            <RestoItem
+              key={resto.id}
+              resto={resto}
+              handleVote={handleVote}
+              isLoggedIn={!!session}
+              isTop={index === 0}
+              isBottom={index === restos.length - 1}
+            />
+          ))}
+        </AnimatePresence>
       </main>
 
       <footer style={{ marginTop: '2rem' }}>

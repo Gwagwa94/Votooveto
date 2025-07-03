@@ -14,6 +14,7 @@
     "@mui/icons-material": "^7.1.2",
     "@vercel/kv": "^3.0.0",
     "crypto-browserify": "^3.12.1",
+    "framer-motion": "^12.23.0",
     "next": "^15.3.4",
     "next-auth": "^4.24.11",
     "pusher": "^5.2.0",
